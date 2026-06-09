@@ -1,119 +1,153 @@
-# Neiva Climate & Irrigation Analysis (1990 - 2026)
+# Analisis de clima y riego en Neiva (1990 - 2026)
 
-[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://www.python.org/)
-[![Meteostat](https://img.shields.io/badge/data%20source-Meteostat%20%2F%20NOAA-green.svg)](https://meteostat.net/)
+[![Version de Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://www.python.org/)
+[![Fuente de datos](https://img.shields.io/badge/fuente%20de%20datos-Meteostat%20%2F%20NOAA-green.svg)](https://meteostat.net/)
 
-Data pipeline and climatological analysis of **Neiva, Colombia**. This project implements statistical trend tests (Mann-Kendall) and the Standardized Precipitation Index (SPI-3) to optimize agricultural irrigation planning and analyze climate change trends in the department of Huila.
+Proyecto de analisis de datos climaticos para **Neiva, Colombia**. El repositorio construye un flujo ETL con Python, limpia registros historicos de clima, calcula indicadores de sequia agricola y genera visualizaciones listas para un caso de portafolio.
 
----
-
-## 📌 Business Case & Objectives
-
-Neiva is located in a critical agricultural region of Colombia, producing crops like rice, cocoa, and fruits that depend heavily on irrigation. Climate variability (such as El Niño and La Niña) creates extreme challenges for water resource management.
-
-This project aims to:
-1.  **Extract & Clean:** Build an automated ETL pipeline to retrieve historical weather records from NOAA's station at the Benito Salas Airport (WMO: 80315).
-2.  **Evaluate Climate Trends:** Determine if temperature and rainfall have statistically significant trends over the last 36 years.
-3.  **Model Droughts:** Calculate the **SPI-3 (Standardized Precipitation Index)** to isolate and evaluate agricultural drought periods.
-4.  **Actionable Insights:** Define crop planting recommendations and critical irrigation windows.
-5.  **Dashboard Integration:** Export clean data for visualization in Power BI.
+El caso se enfoca en una pregunta practica: **como puede usarse la informacion climatica historica para apoyar decisiones de riego agricola en Neiva?**
 
 ---
 
-## ⚙️ Architecture & Pipeline
+## Caso de negocio y objetivos
+
+Neiva esta ubicada en una zona agricola importante del Huila, con cultivos como arroz, cacao y frutales que dependen del manejo oportuno del agua. La variabilidad climatica, incluyendo fenomenos como El Nino y La Nina, crea riesgos para la planeacion del riego, la productividad y el uso eficiente de los recursos hidricos.
+
+Este proyecto busca:
+
+1. **Extraer y limpiar datos climaticos:** construir un flujo ETL automatizado para obtener registros historicos de la estacion del Aeropuerto Benito Salas (WMO: 80315).
+2. **Evaluar tendencias climaticas:** identificar si la temperatura y la precipitacion presentan cambios estadisticamente significativos en el tiempo.
+3. **Modelar sequias agricolas:** calcular el **SPI-3**, o Indice de Precipitacion Estandarizado a 3 meses, para detectar periodos secos relevantes para agricultura.
+4. **Generar recomendaciones accionables:** identificar meses criticos para riego y ventanas utiles para la planeacion agricola.
+5. **Preparar datos para visualizacion:** exportar archivos limpios que pueden usarse en Power BI u otras herramientas de analisis.
+
+---
+
+## Flujo de trabajo del proyecto
 
 ```mermaid
 graph TD
-    A[Meteostat API / NOAA] -->|Python Extraction| B[Fase ETL: pandas]
-    B -->|Linear & Climatological Imputation| C[EDA & Trend Detection]
-    C -->|Gamma Distribution Fitting: SPI-3| D[Visualizations & Statistics]
-    D -->|CSV Output| E[Power BI Dashboard]
-    D -->|Markdown Report| F[GitHub Portfolio]
+    A[Meteostat API / NOAA] -->|Extraccion con Python| B[ETL con pandas]
+    B -->|Limpieza e imputacion| C[Analisis exploratorio]
+    C -->|Pruebas de tendencia y SPI-3| D[Graficas y resultados]
+    D -->|CSV final| E[Dashboard en Power BI]
+    D -->|Documentacion| F[Portafolio en GitHub]
 ```
 
 ---
 
-## 📊 Key Climatological Insights
+## Hallazgos principales
 
-### 1. Temperature Trends: Night Warming
-Running the **Mann-Kendall trend test** on annual aggregates from 1990 to 2025 revealed:
-*   **Mean & Max Temperatures:** No statistically significant trend ($p > 0.05$).
-*   **Minimum Temperature:** **A statistically significant increasing trend ($p = 0.0246$)** of **$+0.148 ^\circ\text{C}$ per decade**.
+### 1. Tendencias de temperatura: calentamiento nocturno
 
-> [!IMPORTANT]
-> Nighttime temperatures are rising faster than daytime temperatures. In crops like rice, warmer nights increase respiration rates, causing plants to expend more energy at night and reducing overall crop yield.
+Al aplicar la prueba de tendencia de Mann-Kendall sobre los datos anuales de 1990 a 2025, se encontro:
 
-### 2. Precipitation Trends: Rising Totals
-*   **Precipitation Trend:** **A highly significant increasing trend ($p = 0.0031$)** of **$+242.3\text{ mm}$ per decade**.
-*   While Neiva is getting more cumulative rain per year, the rain is concentrated in specific months, leaving dry seasons vulnerable to evaporation from rising temperatures.
+* **Temperatura media y maxima:** no presentan una tendencia estadisticamente significativa.
+* **Temperatura minima:** presenta una tendencia creciente estadisticamente significativa, con un cambio aproximado de **+0.148 grados Celsius por decada**.
 
-### 3. Seasonality & The Bimodal Calendar
-Neiva exhibits a classic bimodal rainfall regime:
-*   **Wet Seasons:** March - April and October - November (highest peak in November: average **124.7 mm**).
-*   **Dry Seasons:** Enero - Febrero and a major dry season in **July - September**.
-*   **Critical Irrigation Window:** **August** is the driest month (average **7.2 mm** of rain) and has an average maximum temperature of **35.1 °C** with high wind speeds of **10.7 km/h**. Crops require 100% artificial irrigation during this quarter.
+Este resultado es importante porque las temperaturas nocturnas mas altas pueden afectar cultivos sensibles. En el caso del arroz, noches mas calidas pueden aumentar la respiracion de la planta y reducir energia disponible para el rendimiento final del grano.
 
-### 4. Historic Drought Analysis (SPI-3)
-Our SPI-3 model successfully isolated the worst agricultural droughts in Neiva's recent history:
-*   **1992 (SPI = -1.89):** Severe drought corresponding to the historic 1991-1992 El Niño event.
-*   **2009-2010 (SPI = -1.91):** Extreme drought associated with the 2009 El Niño.
+### 2. Tendencias de precipitacion: aumento del acumulado anual
+
+La precipitacion anual muestra una tendencia creciente significativa, cercana a **+242.3 mm por decada**. Sin embargo, recibir mas lluvia total durante el ano no significa que el riesgo agricola desaparezca, porque la lluvia puede concentrarse en meses especificos y dejar periodos secos con mayor demanda de riego.
+
+### 3. Estacionalidad: regimen bimodal de lluvias
+
+Neiva presenta un comportamiento bimodal:
+
+* **Temporadas de lluvia:** marzo-abril y octubre-noviembre.
+* **Temporadas secas:** enero-febrero y, especialmente, julio-septiembre.
+* **Mes mas critico para riego:** agosto, por combinar baja precipitacion, temperaturas altas y mayor presion de evapotranspiracion.
+
+### 4. Analisis historico de sequias con SPI-3
+
+El indicador SPI-3 permite identificar periodos de sequia agricola. Dentro de los eventos mas fuertes aparecen:
+
+* **1992:** sequia severa asociada al fenomeno de El Nino de 1991-1992.
+* **2009-2010:** sequia extrema asociada al fenomeno de El Nino de 2009.
 
 ---
 
-## 📂 Repository Structure
+## Estructura del repositorio
 
 ```text
-├── data/
-│   ├── neiva_clima_diario.csv        # Clean daily time series (13,300 records)
-│   ├── neiva_clima_mensual.csv       # Clean monthly aggregates (437 records)
-│   └── neiva_clima_analisis_final.csv# Final enriched dataset with SPI-3 for Power BI
-│
-├── plots/
-│   ├── temperatura_tendencia.png     # Temperature trends plot
-│   ├── precipitacion_estacionalidad.png # Rainfall seasonality boxplot
-│   └── spi_sequias.png               # SPI-3 drought time series
-│
-├── requirements.txt                  # Python dependencies
-├── data_extraction.py                # ETL and Imputation script
-├── data_analysis.py                  # Statistical testing and SPI modeling script
-└── README.md                         # Portfolio Case Study (this file)
+data/
+  neiva_clima_diario.csv           # Serie diaria limpia
+  neiva_clima_mensual.csv          # Agregaciones mensuales
+  neiva_clima_analisis_final.csv   # Dataset final con SPI-3
+
+plots/
+  temperatura_tendencia.png        # Grafica de tendencias de temperatura
+  precipitacion_estacionalidad.png # Grafica de estacionalidad de lluvias
+  spi_sequias.png                  # Serie temporal de sequias SPI-3
+
+requirements.txt                   # Dependencias del proyecto
+data_extraction.py                 # Extraccion y limpieza de datos
+data_analysis.py                   # Analisis estadistico y visualizaciones
+README.md                          # Documentacion del caso
 ```
 
 ---
 
-## 🚀 How to Run the Project
+## Como ejecutar el proyecto
 
-### 1. Setup Environment
+### 1. Crear y activar el entorno virtual
+
 ```bash
 python -m venv venv
-# On Windows (PowerShell):
+```
+
+En Windows PowerShell:
+
+```bash
 .\venv\Scripts\Activate.ps1
-# On Linux/macOS:
+```
+
+En Linux o macOS:
+
+```bash
 source venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### 2. Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run Pipeline
-*   **Step 1: Extract and Clean Data**
-    ```bash
-    python data_extraction.py
-    ```
-*   **Step 2: Run Statistical Analysis and SPI Calculation**
-    ```bash
-    python data_analysis.py
-    ```
+### 3. Ejecutar el flujo completo
+
+Primero se descargan y limpian los datos:
+
+```bash
+python data_extraction.py
+```
+
+Luego se ejecuta el analisis estadistico, el calculo de SPI-3 y la generacion de graficas:
+
+```bash
+python data_analysis.py
+```
 
 ---
 
-## 🔌 Power BI Integration
+## Integracion con Power BI
 
-The final dataset `neiva_clima_analisis_final.csv` is fully structured for Power BI. 
-We suggest creating a conditional column based on the `spi_3` value to classify drought severity:
-*   `SPI-3 <= -2.0` $\rightarrow$ **Extreme Drought** (Dark Red)
-*   `-2.0 < SPI-3 <= -1.5` $\rightarrow$ **Severe Drought** (Red)
-*   `-1.5 < SPI-3 <= -1.0` $\rightarrow$ **Moderate Drought** (Orange)
-*   `SPI-3 > -1.0` $\rightarrow$ **Normal/Wet Condition** (Green/Gray)
+El archivo `neiva_clima_analisis_final.csv` queda listo para importarse en Power BI. Una columna condicional basada en `spi_3` puede clasificar la severidad de las sequias:
+
+* `SPI-3 <= -2.0`: sequia extrema
+* `-2.0 < SPI-3 <= -1.5`: sequia severa
+* `-1.5 < SPI-3 <= -1.0`: sequia moderada
+* `SPI-3 > -1.0`: condicion normal o humeda
+
+---
+
+## Tecnologias utilizadas
+
+* Python
+* pandas y NumPy
+* Matplotlib y Seaborn
+* Meteostat
+* SciPy
+* pymannkendall
+* Power BI
